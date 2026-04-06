@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>🔥 Skin Studio 3D</title>
+
+<style>
+body {
+  margin: 0;
+  background: #0f0f0f;
+  color: white;
+  font-family: Arial;
+  text-align: center;
+}
+
+h1 {
+  color: cyan;
+}
+
+#ui {
+  padding: 15px;
+}
+
+canvas {
+  image-rendering: pixelated;
+}
+
+button {
+  margin: 10px;
+  padding: 10px;
+  background: cyan;
+  border: none;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🧱 SKIN STUDIO 3D</h1>
+
+<div id="ui">
+  <input type="file" id="upload">
+  <br>
+  <canvas id="skinCanvas" width="64" height="64"></canvas>
+  <br>
+  <button onclick="downloadSkin()">Download Skin</button>
+</div>
+
+<!-- 3D VIEW -->
+<div id="viewer"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+const canvas = document.getElementById("skinCanvas");
+const ctx = canvas.getContext("2d");
+
+// --- Load default Steve skin ---
+const steve = new Image();
+steve.src = "https://minecraftskins.net/download/steve"; // fallback skin
+
+steve.onload = () => {
+  ctx.drawImage(steve, 0, 0, 64, 64);
+};
+
+// --- Upload image ---
+document.getElementById("upload").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const img = new Image();
+  img.onload = () => applyToSkin(img);
+  img.src = URL.createObjectURL(file);
+});
+
+// --- Map image to skin layout ---
+function applyToSkin(img) {
+  // Draw base Steve first
+  ctx.drawImage(steve, 0, 0, 64, 64);
+
+  // Draw FACE (front head area)
+  ctx.drawImage(img, 0, 0, img.width, img.height,
+    8, 8, 8, 8); // head front
+
+  // Draw BODY (torso front)
+  ctx.drawImage(img, 0, 0, img.width, img.height,
+    20, 20, 8, 12);
+
+  // Draw ARMS
+  ctx.drawImage(img, 0, 0, img.width, img.height,
+    44, 20, 4, 12);
+
+  // Draw LEGS
+  ctx.drawImage(img, 0, 0, img.width, img.height,
+    4, 20, 4, 12);
+
+  updateTexture();
+}
+
+// --- Download ---
+function downloadSkin() {
+  const link = document.createElement("a");
+  link.download = "skin.png";
+  link.href = canvas.toDataURL();
+  link.click();
+}
+
+//////////////////////////////////////////////////////
+// 🧱 THREE.JS 3D VIEWER
+//////////////////////////////////////////////////////
+
+let scene = new THREE.Scene();
+let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+let renderer = new THREE.WebGLRenderer();
+
+renderer.setSize(window.innerWidth, 400);
+document.getElementById("viewer").appendChild(renderer.domElement);
+
+let texture = new THREE.CanvasTexture(canvas);
+
+// Simple cube (represents player)
+let geometry = new THREE.BoxGeometry(1, 2, 0.5);
+let material = new THREE.MeshBasicMaterial({ map: texture });
+let cube = new THREE.Mesh(geometry, material);
+
+scene.add(cube);
+
+camera.position.z = 3;
+
+// Rotate
+function animate() {
+  requestAnimationFrame(animate);
+  cube.rotation.y += 0.01;
+  renderer.render(scene, camera);
+}
+animate();
+
+// Update texture when canvas changes
+function updateTexture() {
+  texture.needsUpdate = true;
+}
+
+// Mouse control (drag rotate)
+let dragging = false;
+
+window.addEventListener("mousedown", () => dragging = true);
+window.addEventListener("mouseup", () => dragging = false);
+
+window.addEventListener("mousemove", e => {
+  if (dragging) {
+    cube.rotation.y += e.movementX * 0.01;
+    cube.rotation.x += e.movementY * 0.01;
+  }
+});
+</script>
+
+</body>
+</html>
